@@ -1,4 +1,4 @@
-# BreedSense AI
+# BreedSense AI (SIH 2025 By Gredient Gang)
 
 BreedSense AI — in-browser cattle/buffalo breed recognition (Vite + React + TypeScript).
 
