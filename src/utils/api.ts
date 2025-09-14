@@ -1,7 +1,25 @@
-export const API_BASE = import.meta.env.VITE_API_BASE || 'https://sihbackend-production.up.railway.app';
+// Prefer explicit VITE_API_BASE. In local dev, fall back to localhost so developers without DNS to the
+// production host can continue to work against a local FastAPI instance.
+const PROD_HOST = 'https://sihbackend-production.up.railway.app';
+export const API_BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? 'https://sihbackend-production.up.railway.app' : PROD_HOST);
+
+// lightweight wrapper around fetch that throws a clear error on network failures and returns
+// non-ok responses as objects so callers can decide how to handle 4xx/5xx payloads.
+async function safeFetch(input: RequestInfo, init?: RequestInit) {
+    try {
+        const res = await fetch(input, init);
+        return res;
+    } catch (err: any) {
+        // network-level failure (DNS, CORS preflight blocked, offline, etc.)
+        const message = err && err.message ? String(err.message) : 'Network error';
+        const e: any = new Error(`Network request failed: ${message}`);
+        e.isNetworkError = true;
+        throw e;
+    }
+}
 
 export async function pingRoot() {
-    const res = await fetch(`${API_BASE}/`);
+    const res = await safeFetch(`${API_BASE}/`);
     if (!res.ok) throw new Error('Root ping failed');
     return res.json();
 }
@@ -10,23 +28,39 @@ export async function recognizeBreed(file: File): Promise<{ predicted_class: str
     const form = new FormData();
     form.append('file', file);
 
-    const res = await fetch(`${API_BASE}/recognize_breed`, {
+    const res = await safeFetch(`${API_BASE}/recognize_breed`, {
         method: 'POST',
         body: form
     });
 
+    // Let caller decide how to handle non-ok (400 with JSON error message, etc.)
     if (!res.ok) {
         const text = await res.text();
-        throw new Error(`recognize_breed failed: ${res.status} ${text}`);
+        const err: any = new Error(`recognize_breed failed: ${res.status} ${text}`);
+        err.status = res.status;
+        err.body = text;
+        throw err;
     }
 
     return res.json();
 }
 
 export async function getBuffaloBreeds(): Promise<string[]> {
-    const res = await fetch(`${API_BASE}/buffalo_breeds/`);
-    if (!res.ok) throw new Error('Failed to fetch buffalo breeds');
-    return res.json();
+    try {
+        const res = await safeFetch(`${API_BASE}/buffalo_breeds/`);
+        if (!res.ok) {
+            // surface server-side error with status for debugging
+            const text = await res.text();
+            throw new Error(`Failed to fetch buffalo breeds: ${res.status} ${text}`);
+        }
+        return await res.json();
+    } catch (err: any) {
+        // If network error (e.g. DNS not resolvable) or other failures, log and return empty list
+        // so the UI doesn't completely break in dev.
+        // eslint-disable-next-line no-console
+        console.warn('[getBuffaloBreeds] fetch failed, returning empty list:', err && err.message ? err.message : err);
+        return [];
+    }
 }
 
 export async function getBuffaloBreedDetail(breed_name: string): Promise<any> {
