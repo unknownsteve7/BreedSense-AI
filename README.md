@@ -1,69 +1,27 @@
-# React + TypeScript + Vite
+# BreedSense AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+BreedSense AI — in-browser cattle/buffalo breed recognition (Vite + React + TypeScript).
 
-Currently, two official plugins are available:
+## Overview
+Frontend captures or uploads images, sends them to a FastAPI backend for breed recognition, and displays a normalized breed profile (Overview, Gender Traits, Production (peak milk), History, Conservation). Identifications are persisted to localStorage.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech stack
+- Frontend: Vite, React, TypeScript, Tailwind CSS, Radix UI
+- Backend: FastAPI (expected endpoints below)
+- Local persistence: localStorage (key: `vxai_identifications_v1`)
 
-## Expanding the ESLint configuration
+## Required backend endpoints
+- GET /                → root ping
+- POST /recognize_breed → multipart/form-data (file)
+  - Response: `{ predicted_class: string, confidence_score: number }` (200) or 400 with `{ detail: "No Buffalo Detected..." }`
+- GET /buffalo_breeds/ → returns list of breed names
+- GET /buffalo_breeds/{breed_name} → returns detailed breed JSON (the frontend normalizer tolerates many shapes, including nested `male`/`female` fields)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Environment
+Create a `.env` in the project root (my-app) or set env before running:
+- VITE_API_BASE — base URL for your FastAPI server (default fallback: `http://localhost:8000`)
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Example (.env):
+````bash
+// filepath: c:\Users\nagam\Downloads\sih\new\my-app\.env
+VITE_API_BASE=http://localhost:8000
