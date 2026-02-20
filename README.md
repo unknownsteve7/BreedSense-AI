@@ -21,8 +21,5 @@ Frontend captures or uploads images, sends them to a FastAPI backend for breed r
 Create a `.env` in the project root (my-app) or set env before running:
 - VITE_API_BASE — base URL for your FastAPI server (default fallback: `http://localhost:8000`)
 
-Example (.env):
-````bash
-// filepath: c:\Users\nagam\Downloads\sih\new\my-app\.env
-VITE_API_BASE=http://localhost:8000
+
 
